@@ -13,14 +13,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const form = new IncomingForm({ keepExtensions: true });
+  const form = new IncomingForm({ keepExtensions: true, uploadDir: '/tmp' });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      return res.status(500).json({ error: 'Failed to parse file' });
+      return res.status(500).json({ error: 'File parse failed' });
     }
 
-    // Accept the file no matter what key it's under
     const file = files?.file || files?.image || Object.values(files)[0];
     if (!file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -31,12 +30,19 @@ export default async function handler(req, res) {
     const publicPath = path.join(process.cwd(), 'public', 'uploads', fileName);
 
     try {
-      await fs.promises.copyFile(tempPath, publicPath);
-    } catch (copyErr) {
-      return res.status(500).json({ error: 'Failed to save file' });
+      // Stream from /tmp to public/uploads
+      await new Promise((resolve, reject) => {
+        const readStream = fs.createReadStream(tempPath);
+        const writeStream = fs.createWriteStream(publicPath);
+        readStream.pipe(writeStream);
+        writeStream.on('finish', resolve);
+        writeStream.on('error', reject);
+      });
+    } catch (streamErr) {
+      return res.status(500).json({ error: 'Stream failed', details: streamErr.message });
     }
 
     const url = `https://${req.headers.host}/uploads/${fileName}`;
-    res.status(200).json({ url });
+    return res.status(200).json({ url });
   });
 }
