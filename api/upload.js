@@ -13,11 +13,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const form = new IncomingForm({
-    multiples: false,
-    uploadDir: './public/uploads',
-    keepExtensions: true,
-  });
+  const form = new IncomingForm({ keepExtensions: true });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
@@ -29,9 +25,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const fileName = path.basename(file[0].filepath);
-    const url = `https://${req.headers.host}/uploads/${fileName}`;
+    const tempPath = file[0].filepath;
+    const fileName = path.basename(tempPath);
+    const publicPath = path.join(process.cwd(), 'public', 'uploads', fileName);
 
+    await fs.promises.copyFile(tempPath, publicPath);
+
+    const url = `https://${req.headers.host}/uploads/${fileName}`;
     res.status(200).json({ url });
   });
 }
