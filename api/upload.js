@@ -13,7 +13,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const form = new IncomingForm({ multiples: false, uploadDir: '/tmp', keepExtensions: true });
+  const form = new IncomingForm({
+    multiples: false,
+    uploadDir: './public/uploads', // ✅ SAVES TO PUBLIC FOLDER
+    keepExtensions: true,
+  });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
@@ -21,13 +25,12 @@ export default async function handler(req, res) {
     }
 
     const file = files.image || files.file;
-
     if (!file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
     const fileName = path.basename(file[0].filepath);
-    const url = `https://${req.headers.host}/uploads/${fileName}`;
+    const url = `https://${req.headers.host}/uploads/${fileName}`; // ✅ THIS URL WILL NOW WORK
 
     res.status(200).json({ url });
   });
