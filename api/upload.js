@@ -17,28 +17,26 @@ export default async function handler(req, res) {
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      console.error('Parse error:', err);
       return res.status(500).json({ error: 'Failed to parse file' });
     }
 
-    const file = files.image || files.file;
+    // Accept the file no matter what key it's under
+    const file = files?.file || files?.image || Object.values(files)[0];
     if (!file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
+    const tempPath = file.filepath;
+    const fileName = path.basename(tempPath);
+    const publicPath = path.join(process.cwd(), 'public', 'uploads', fileName);
+
     try {
-      const tempPath = file[0].filepath;
-      const fileName = path.basename(tempPath);
-      const destination = path.join(process.cwd(), 'public', 'uploads', fileName);
-
-      await fs.promises.copyFile(tempPath, destination);
-
-      const url = `https://${req.headers.host}/uploads/${fileName}`;
-      return res.status(200).json({ url });
-
-    } catch (copyError) {
-      console.error('File copy error:', copyError);
+      await fs.promises.copyFile(tempPath, publicPath);
+    } catch (copyErr) {
       return res.status(500).json({ error: 'Failed to save file' });
     }
+
+    const url = `https://${req.headers.host}/uploads/${fileName}`;
+    res.status(200).json({ url });
   });
 }
