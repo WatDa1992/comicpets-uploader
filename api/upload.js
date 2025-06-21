@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 
   const form = new IncomingForm({
     multiples: false,
-    uploadDir: './public/uploads', // ✅ SAVES TO PUBLIC FOLDER
+    uploadDir: './public/uploads',
     keepExtensions: true,
   });
 
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     }
 
     const fileName = path.basename(file[0].filepath);
-    const url = `https://${req.headers.host}/uploads/${fileName}`; // ✅ THIS URL WILL NOW WORK
+    const url = `https://${req.headers.host}/uploads/${fileName}`;
 
     res.status(200).json({ url });
   });
