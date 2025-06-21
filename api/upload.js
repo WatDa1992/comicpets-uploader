@@ -17,6 +17,7 @@ export default async function handler(req, res) {
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
+      console.error('Parse error:', err);
       return res.status(500).json({ error: 'Failed to parse file' });
     }
 
@@ -25,13 +26,19 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const tempPath = file[0].filepath;
-    const fileName = path.basename(tempPath);
-    const publicPath = path.join(process.cwd(), 'public', 'uploads', fileName);
+    try {
+      const tempPath = file[0].filepath;
+      const fileName = path.basename(tempPath);
+      const destination = path.join(process.cwd(), 'public', 'uploads', fileName);
 
-    await fs.promises.copyFile(tempPath, publicPath);
+      await fs.promises.copyFile(tempPath, destination);
 
-    const url = `https://${req.headers.host}/uploads/${fileName}`;
-    res.status(200).json({ url });
+      const url = `https://${req.headers.host}/uploads/${fileName}`;
+      return res.status(200).json({ url });
+
+    } catch (copyError) {
+      console.error('File copy error:', copyError);
+      return res.status(500).json({ error: 'Failed to save file' });
+    }
   });
 }
